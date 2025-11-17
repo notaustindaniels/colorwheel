@@ -1,0 +1,198 @@
+:root {
+    --marker-size: 34px;
+    --active-marker-size: 34px;
+    --marker-border-color: #fff;
+    --marker-border-width: 2px;
+    --spoke-color: #fff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #2c2c2c;
+    color: #fff;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 800px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 300;
+    font-size: 28px;
+}
+
+/* Harmony Selector */
+.harmony-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.harmony-selector label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #b0b0b0;
+}
+
+.harmony-selector select {
+    padding: 8px 16px;
+    font-size: 14px;
+    background-color: #3a3a3a;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.harmony-selector select:hover {
+    background-color: #454545;
+    border-color: #4fc3db;
+}
+
+.harmony-selector select:focus {
+    border-color: #4fc3db;
+    box-shadow: 0 0 0 2px rgba(79, 195, 219, 0.2);
+}
+
+.color-wheel-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.canvas-markers {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    cursor: crosshair;
+}
+
+#colorWheel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+}
+
+/* Marker Styles */
+.marker {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: var(--marker-size);
+    height: var(--marker-size);
+    top: 0;
+    left: 0;
+    border: solid var(--marker-border-width) var(--marker-border-color);
+    border-radius: 50%;
+    z-index: 1;
+    cursor: crosshair;
+    pointer-events: auto;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+    touch-action: none;
+    transition: none;
+}
+
+.marker:hover {
+    border-color: #4fc3db;
+    border-width: 3px;
+}
+
+.active-marker {
+    z-index: 5;
+    width: var(--active-marker-size);
+    height: var(--active-marker-size);
+}
+
+.base-marker-indicator {
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    left: -3px;
+    transform: rotate(90deg);
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Spoke Styles */
+.spoke {
+    position: absolute;
+    height: 1px;
+    background-color: var(--spoke-color);
+    pointer-events: none;
+    transform-origin: 0 center;
+    z-index: 0;
+}
+
+.active-spoke {
+    z-index: 4;
+}
+
+/* Color Swatches */
+.color-swatches {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.swatch {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.swatch:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.swatch-label {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+@media (max-width: 640px) {
+    .marker {
+        width: 40px;
+        height: 40px;
+    }
+
+    .active-marker {
+        width: 40px;
+        height: 40px;
+    }
+}

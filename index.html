@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Wheel - Multiple Harmonies</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Color Wheel</h1>
+
+        <div class="harmony-selector">
+            <label for="harmonySelect">Color Harmony:</label>
+            <select id="harmonySelect">
+                <option value="analogous" selected>Analogous</option>
+                <option value="monochromatic">Monochromatic</option>
+                <option value="triad">Triad</option>
+                <option value="complementary">Complementary</option>
+                <option value="split-complementary">Split Complementary</option>
+                <option value="square">Square</option>
+                <option value="compound">Compound</option>
+            </select>
+        </div>
+
+        <div class="color-wheel-container">
+            <div class="canvas-markers" id="canvasMarkers">
+                <canvas id="colorWheel" width="300" height="300"></canvas>
+                <!-- Markers and spokes will be dynamically created here -->
+            </div>
+        </div>
+
+        <div class="color-swatches" id="colorSwatches">
+            <!-- Color swatches will be displayed here -->
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="harmony/AnalogousHarmony.js"></script>
+    <script src="harmony/MonochromaticHarmony.js"></script>
+    <script src="harmony/TriadHarmony.js"></script>
+    <script src="harmony/ComplementaryHarmony.js"></script>
+    <script src="harmony/SplitComplementaryHarmony.js"></script>
+    <script src="harmony/SquareHarmony.js"></script>
+    <script src="harmony/CompoundHarmony.js"></script>
+    <script src="colorwheel.js"></script>
+</body>
+</html>
