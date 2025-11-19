@@ -154,9 +154,17 @@ h1 {
     gap: 10px;
     justify-content: center;
     flex-wrap: wrap;
+    align-items: center;
+}
+
+.swatch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .swatch {
+    position: relative;
     width: 100px;
     height: 100px;
     border-radius: 8px;
@@ -183,6 +191,74 @@ h1 {
     font-size: 12px;
     font-weight: bold;
     letter-spacing: 0.5px;
+}
+
+/* Remove Button */
+.remove-swatch-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+    padding: 0;
+}
+
+.swatch:hover .remove-swatch-btn {
+    opacity: 1;
+}
+
+.remove-swatch-btn:hover {
+    background: rgba(255, 0, 0, 0.8);
+}
+
+.remove-swatch-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Add Button */
+.add-swatch-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border: 2px dashed #666;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.add-swatch-btn:hover {
+    border-color: #4fc3db;
+    color: #4fc3db;
+    background: rgba(79, 195, 219, 0.1);
+    transform: scale(1.1);
+}
+
+.add-swatch-btn.final-add-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-width: 2px;
+}
+
+.add-swatch-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 @media (max-width: 640px) {

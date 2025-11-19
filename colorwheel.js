@@ -15,9 +15,14 @@ class ColorWheel {
         this.centerX = this.wheelRadius;
         this.centerY = this.wheelRadius;
 
-        // Harmony system - start with analogous
-        this.harmony = new AnalogousHarmony();
+        // Initialize marker definitions
+        this.markerDefinitions = new MarkerDefinitions();
+
+        // Harmony system - start with analogous at 6 markers
         this.harmonyType = 'analogous';
+        this.currentMarkerCount = 6;
+        this.harmony = new DynamicHarmony(this.harmonyType, this.markerDefinitions);
+        this.harmony.setMarkerCount(this.currentMarkerCount);
 
         // Base color (middle of wheel, fully saturated)
         this.baseColor = { h: 150, s: 94, v: 86 };
@@ -244,12 +249,21 @@ class ColorWheel {
     }
 
     /**
-     * Update color swatches display
+     * Update color swatches display with add/remove buttons
      */
     updateSwatches() {
         this.swatchesContainer.innerHTML = '';
 
+        const range = this.harmony.getMarkerRange();
+        const canAdd = this.currentMarkerCount < range.max;
+        const canRemove = this.currentMarkerCount > range.min;
+
         this.colors.forEach((color, index) => {
+            // Create swatch wrapper
+            const swatchWrapper = document.createElement('div');
+            swatchWrapper.className = 'swatch-wrapper';
+
+            // Create the color swatch
             const rgb = hsvToRgb(color.h, color.s, color.v);
             const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
 
@@ -257,13 +271,68 @@ class ColorWheel {
             swatch.className = 'swatch';
             swatch.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 
+            // Add remove button inside swatch (not for base marker)
+            if (canRemove && index !== this.harmony.baseColorIndex) {
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-swatch-btn';
+                removeBtn.innerHTML = `
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M3 1.5V0.75H9V1.5M11.25 1.5H0.75M10.5 1.5V10.5C10.5 10.8978 10.342 11.2794 10.0607 11.5607C9.77936 11.842 9.39782 12 9 12H3C2.60218 12 2.22064 11.842 1.93934 11.5607C1.65804 11.2794 1.5 10.8978 1.5 10.5V1.5M4.5 4.5V9M7.5 4.5V9"
+                              stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                `;
+                removeBtn.setAttribute('title', 'Remove color');
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.removeMarker(index);
+                };
+                swatch.appendChild(removeBtn);
+            }
+
             const label = document.createElement('div');
             label.className = 'swatch-label';
             label.textContent = hex;
 
             swatch.appendChild(label);
-            this.swatchesContainer.appendChild(swatch);
+            swatchWrapper.appendChild(swatch);
+
+            // Add "add" button after this swatch (but not after the last one)
+            if (canAdd && index < this.colors.length - 1) {
+                const addBtn = document.createElement('button');
+                addBtn.className = 'add-swatch-btn';
+                addBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 3.5V12.5M3.5 8H12.5"
+                              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                `;
+                addBtn.setAttribute('title', 'Add color');
+                addBtn.onclick = () => this.addMarker();
+                swatchWrapper.appendChild(addBtn);
+            }
+
+            this.swatchesContainer.appendChild(swatchWrapper);
         });
+
+        // Add final "add" button at the end if we can add more
+        if (canAdd) {
+            const finalAddWrapper = document.createElement('div');
+            finalAddWrapper.className = 'swatch-wrapper';
+
+            const addBtn = document.createElement('button');
+            addBtn.className = 'add-swatch-btn final-add-btn';
+            addBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3.5V12.5M3.5 8H12.5"
+                          stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            `;
+            addBtn.setAttribute('title', 'Add color');
+            addBtn.onclick = () => this.addMarker();
+
+            finalAddWrapper.appendChild(addBtn);
+            this.swatchesContainer.appendChild(finalAddWrapper);
+        }
     }
 
     /**
@@ -478,37 +547,97 @@ class ColorWheel {
     }
 
     /**
+     * Add a marker (increase marker count by 1)
+     */
+    addMarker() {
+        const range = this.harmony.getMarkerRange();
+        if (this.currentMarkerCount >= range.max) {
+            console.log('Already at maximum marker count');
+            return;
+        }
+
+        this.currentMarkerCount++;
+        this.harmony.setMarkerCount(this.currentMarkerCount);
+
+        // Clear existing markers and spokes
+        this.markers.forEach(marker => marker.remove());
+        this.spokes.forEach(spoke => spoke.remove());
+        this.markers = [];
+        this.spokes = [];
+
+        // Reset individual saturations and custom offsets for new configuration
+        this.individualSaturations = null;
+        this.customSaturationOffsets = new Map();
+
+        // Update active marker index
+        this.activeMarkerIndex = this.harmony.baseColorIndex;
+
+        // Regenerate everything
+        this.generateColors();
+        this.createSpokes();
+        this.createMarkers();
+        this.updateSwatches();
+        this.updateMarkerPositions();
+        this.updateSpokePositions();
+    }
+
+    /**
+     * Remove a marker at a specific index
+     */
+    removeMarker(index) {
+        const range = this.harmony.getMarkerRange();
+        if (this.currentMarkerCount <= range.min) {
+            console.log('Already at minimum marker count');
+            return;
+        }
+
+        // Cannot remove the base marker
+        if (index === this.harmony.baseColorIndex) {
+            console.log('Cannot remove base marker');
+            return;
+        }
+
+        this.currentMarkerCount--;
+        this.harmony.setMarkerCount(this.currentMarkerCount);
+
+        // Clear existing markers and spokes
+        this.markers.forEach(marker => marker.remove());
+        this.spokes.forEach(spoke => spoke.remove());
+        this.markers = [];
+        this.spokes = [];
+
+        // Reset individual saturations and custom offsets for new configuration
+        this.individualSaturations = null;
+        this.customSaturationOffsets = new Map();
+
+        // Update active marker index
+        this.activeMarkerIndex = this.harmony.baseColorIndex;
+
+        // Regenerate everything
+        this.generateColors();
+        this.createSpokes();
+        this.createMarkers();
+        this.updateSwatches();
+        this.updateMarkerPositions();
+        this.updateSpokePositions();
+    }
+
+    /**
      * Change the harmony type and reinitialize markers
      */
     changeHarmony(harmonyType) {
         this.harmonyType = harmonyType;
 
-        // Create new harmony instance based on type
-        switch (harmonyType) {
-            case 'analogous':
-                this.harmony = new AnalogousHarmony();
-                break;
-            case 'monochromatic':
-                this.harmony = new MonochromaticHarmony();
-                break;
-            case 'triad':
-                this.harmony = new TriadHarmony();
-                break;
-            case 'complementary':
-                this.harmony = new ComplementaryHarmony();
-                break;
-            case 'split-complementary':
-                this.harmony = new SplitComplementaryHarmony();
-                break;
-            case 'square':
-                this.harmony = new SquareHarmony();
-                break;
-            case 'compound':
-                this.harmony = new CompoundHarmony();
-                break;
-            default:
-                this.harmony = new AnalogousHarmony();
+        // Create new dynamic harmony instance
+        this.harmony = new DynamicHarmony(harmonyType, this.markerDefinitions);
+
+        // Reset to default marker count for this harmony (6 markers, or min if less)
+        const range = this.harmony.getMarkerRange();
+        this.currentMarkerCount = Math.min(6, range.max);
+        if (this.currentMarkerCount < range.min) {
+            this.currentMarkerCount = range.min;
         }
+        this.harmony.setMarkerCount(this.currentMarkerCount);
 
         // Clear existing markers and spokes
         this.markers.forEach(marker => marker.remove());
