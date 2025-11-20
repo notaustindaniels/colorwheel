@@ -1,0 +1,1 @@
+importScripts("./imageExtraction.js"),addEventListener("message",function(t){var a=self.extractColorFromImage(t.data.imageData,t.data.width,t.data.height,t.data.swatchCount,t.data.colorMood);this.postMessage(a)},!1),addEventListener("error",function(){this.postMessage("Error")},!1);
