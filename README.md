@@ -32,14 +32,15 @@ If you prefer to start the server manually:
 
 ```bash
 cd "/Users/austin/color_wheel_2.0 copy 2/color.adobe.com/color.adobe.com"
-npx -y http-server -p 8080 --proxy "http://localhost:8080?"
+npx -y http-server -p 8080 --proxy "http://localhost:8080?" &
 ```
 
 **Note:** The quotes around the proxy URL are important to prevent shell expansion of the `?` character.
 
-Then open the color wheel in your browser:
+Wait a few seconds for the server to start, then open the color wheel in your browser:
 
 ```bash
+sleep 2
 open http://localhost:8080/create/color-wheel
 ```
 
@@ -108,7 +109,9 @@ If port 8080 is already in use, you can:
 
 2. Or use a different port:
    ```bash
-   npx -y http-server -p 3000 --proxy http://localhost:3000?
+   cd "/Users/austin/color_wheel_2.0 copy 2/color.adobe.com/color.adobe.com"
+   npx -y http-server -p 3000 --proxy "http://localhost:3000?" &
+   sleep 2
    open http://localhost:3000/create/color-wheel
    ```
 
