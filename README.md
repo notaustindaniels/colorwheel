@@ -17,7 +17,7 @@ lsof -ti:8080 | xargs kill -9
 The easiest way to start the color wheel is using the provided launch script:
 
 ```bash
-cd "/Users/austin/color_wheel_2.0 copy 2/color.adobe.com/color.adobe.com"
+cd "./color.adobe.com/color.adobe.com"
 ./start-color-wheel.sh
 ```
 
@@ -31,7 +31,7 @@ This script will:
 If you prefer to start the server manually:
 
 ```bash
-cd "/Users/austin/color_wheel_2.0 copy 2/color.adobe.com/color.adobe.com"
+cd "./color.adobe.com/color.adobe.com"
 npx -y http-server -p 8080 --proxy "http://localhost:8080?" &
 ```
 
@@ -109,7 +109,7 @@ If port 8080 is already in use, you can:
 
 2. Or use a different port:
    ```bash
-   cd "/Users/austin/color_wheel_2.0 copy 2/color.adobe.com/color.adobe.com"
+   cd "./color.adobe.com/color.adobe.com"
    npx -y http-server -p 3000 --proxy "http://localhost:3000?" &
    sleep 2
    open http://localhost:3000/create/color-wheel
