@@ -2016,3 +2016,15 @@ pre {
     flex-direction: column;
     gap: 0;
 }
+
+/* Color Wheel Canvas Styles */
+.Colorwheel__wheel___dH8_d {
+    display: block;
+    margin: auto;
+    cursor: pointer;
+}
+
+#cw2canvas {
+    max-width: 100%;
+    height: auto;
+}
