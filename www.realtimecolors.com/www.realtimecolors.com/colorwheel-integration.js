@@ -29,6 +29,25 @@
         return selectedScheme ? selectedScheme.getAttribute('data-scheme') : 'all';
     }
 
+    // Get colors that are currently locked
+    function getLockedColors() {
+        const colorNames = ['text', 'bg', 'primary', 'secondary', 'accent'];
+        const locked = {};
+
+        colorNames.forEach(name => {
+            const lockBtn = document.getElementById(`${name}-lock`);
+            if (lockBtn && lockBtn.classList.contains('locked')) {
+                // Get current color value from input
+                const input = document.getElementById(name);
+                if (input && input.value) {
+                    locked[name] = input.value.startsWith('#') ? input.value : '#' + input.value;
+                }
+            }
+        });
+
+        return locked;
+    }
+
     // Normalize hue to 0-360 range
     function normalizeHue(hue) {
         return ((hue % 360) + 360) % 360;
@@ -274,7 +293,12 @@
     }
 
     // Generate AAA compliant color palette with harmony support
+    // Respects locked colors - only regenerates unlocked colors
     function generateAAACompliantColors() {
+        // Get locked colors first
+        const locked = getLockedColors();
+        console.log('Locked colors:', locked);
+
         // 1. Get selected harmony (or pick random if "all")
         let harmony = getSelectedHarmony();
         if (harmony === 'all') {
@@ -285,74 +309,142 @@
         const offsets = HARMONY_OFFSETS[harmony] || HARMONY_OFFSETS['analogous'];
         console.log('Using harmony:', harmony, 'with offsets:', offsets);
 
-        // 2. Generate random Primary color base
-        const primaryHue = Math.random() * 360;
-        const primarySat = 60 + Math.random() * 40; // 60-100%
-        const primaryLight = 35 + Math.random() * 30; // 35-65%
-        let primaryRgb = hslToRgb(primaryHue, primarySat, primaryLight);
-        let primary = rgbToHex(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+        // Initialize result with locked colors
+        let text = locked.text;
+        let bg = locked.bg;
+        let primary = locked.primary;
+        let secondary = locked.secondary;
+        let accent = locked.accent;
 
-        // 3. Determine if primary is light or dark
-        const primaryLuminance = getRelativeLuminance(primaryRgb);
-        const primaryIsLight = primaryLuminance > 0.18;
-
-        // 4. Generate Background - opposite extreme from primary
-        const bgHue = primaryHue; // Use same hue for consistency
-        const bgSat = 3 + Math.random() * 7; // Very low saturation for background
-        let bgLight = primaryIsLight ? (3 + Math.random() * 7) : (93 + Math.random() * 5);
-        let bgRgb = hslToRgb(bgHue, bgSat, bgLight);
-        let bg = rgbToHex(bgRgb.r, bgRgb.g, bgRgb.b);
-
-        // 4b. Ensure primary has 7:1 contrast with background
-        primary = adjustForContrast(primary, bg, 7.0, !primaryIsLight);
-
-        // 5. Generate Text - should contrast well with background
-        const bgLuminance = getRelativeLuminance(bgRgb);
-        const bgIsLight = bgLuminance > 0.5;
-
-        const textHue = bgHue;
-        const textSat = 3 + Math.random() * 7;
-        let textLight = bgIsLight ? (5 + Math.random() * 10) : (90 + Math.random() * 8);
-        let textRgb = hslToRgb(textHue, textSat, textLight);
-        let text = rgbToHex(textRgb.r, textRgb.g, textRgb.b);
-
-        // Verify text has sufficient contrast with background
-        let textContrast = getContrastRatio(hexToRgb(text), bgRgb);
-        if (textContrast < 7.0) {
-            textLight = bgIsLight ? 2 : 98;
-            textRgb = hslToRgb(textHue, textSat, textLight);
-            text = rgbToHex(textRgb.r, textRgb.g, textRgb.b);
+        // Determine the base hue for harmony calculations
+        // Use locked primary's hue if available, otherwise generate random
+        let primaryHue;
+        if (locked.primary) {
+            const lockedPrimaryRgb = hexToRgb(locked.primary);
+            const lockedPrimaryHsl = rgbToHsl(lockedPrimaryRgb.r, lockedPrimaryRgb.g, lockedPrimaryRgb.b);
+            primaryHue = lockedPrimaryHsl.h;
+        } else {
+            primaryHue = Math.random() * 360;
         }
 
-        // 6. Generate Secondary using harmony offset
-        const secondaryHue = normalizeHue(primaryHue + offsets.secondary);
-        // For monochromatic, vary saturation more
-        const secondarySat = harmony === 'monochromatic'
-            ? (30 + Math.random() * 30) // Lower saturation for monochromatic
-            : (50 + Math.random() * 30);
-        let secondaryLight = bgIsLight ? (35 + Math.random() * 15) : (55 + Math.random() * 20);
-        let secondaryRgb = hslToRgb(secondaryHue, secondarySat, secondaryLight);
-        let secondary = rgbToHex(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b);
+        // Handle background generation/preservation
+        let bgRgb, bgIsLight;
+        if (locked.bg) {
+            // Background is locked - use it as reference
+            bgRgb = hexToRgb(locked.bg);
+            bgIsLight = getRelativeLuminance(bgRgb) > 0.5;
+        } else {
+            // Generate new background that contrasts with all locked foreground colors
+            // Collect all locked foreground colors to check contrast against
+            const lockedFgColors = [];
+            if (locked.primary) lockedFgColors.push(locked.primary);
+            if (locked.secondary) lockedFgColors.push(locked.secondary);
+            if (locked.accent) lockedFgColors.push(locked.accent);
+            if (locked.text) lockedFgColors.push(locked.text);
 
-        // Ensure secondary has 7:1 contrast with background
-        secondary = adjustForContrast(secondary, bg, 7.0, !bgIsLight);
+            if (lockedFgColors.length > 0) {
+                // Determine if we need light or dark background based on locked colors
+                // Check the average luminance of locked colors
+                let avgLuminance = 0;
+                lockedFgColors.forEach(hex => {
+                    avgLuminance += getRelativeLuminance(hexToRgb(hex));
+                });
+                avgLuminance /= lockedFgColors.length;
 
-        // 7. Generate Accent using harmony offset
-        const accentHue = normalizeHue(primaryHue + offsets.accent);
-        // For monochromatic, vary saturation significantly
-        const accentSat = harmony === 'monochromatic'
-            ? (70 + Math.random() * 30) // Higher saturation for monochromatic accent
-            : (70 + Math.random() * 30);
-        let accentLight = bgIsLight ? (35 + Math.random() * 15) : (55 + Math.random() * 20);
-        let accentRgb = hslToRgb(accentHue, accentSat, accentLight);
-        let accent = rgbToHex(accentRgb.r, accentRgb.g, accentRgb.b);
+                // If locked colors are light, we need dark bg; if dark, we need light bg
+                const needDarkBg = avgLuminance > 0.2;
 
-        // Ensure accent has 7:1 contrast with background
-        accent = adjustForContrast(accent, bg, 7.0, !bgIsLight);
+                const bgHue = primaryHue;
+                const bgSat = 3 + Math.random() * 5; // Very low saturation
 
-        // Log contrast ratios and harmony for verification
+                // Start with extreme lightness, then adjust if needed
+                let bgLight = needDarkBg ? 5 : 95;
+                bgRgb = hslToRgb(bgHue, bgSat, bgLight);
+                bg = rgbToHex(bgRgb.r, bgRgb.g, bgRgb.b);
+
+                // Verify contrast with all locked colors and adjust if needed
+                let minContrast = Infinity;
+                lockedFgColors.forEach(hex => {
+                    const contrast = getContrastRatio(hexToRgb(hex), bgRgb);
+                    if (contrast < minContrast) minContrast = contrast;
+                });
+
+                // If contrast is insufficient, go more extreme
+                if (minContrast < 7.0) {
+                    bgLight = needDarkBg ? 2 : 98;
+                    bgRgb = hslToRgb(bgHue, bgSat, bgLight);
+                    bg = rgbToHex(bgRgb.r, bgRgb.g, bgRgb.b);
+                }
+            } else {
+                // No foreground colors locked - generate fresh bg based on primary hue
+                const primarySat = 60 + Math.random() * 40;
+                const primaryLight = 35 + Math.random() * 30;
+                const tempPrimaryRgb = hslToRgb(primaryHue, primarySat, primaryLight);
+                const primaryLuminance = getRelativeLuminance(tempPrimaryRgb);
+                const primaryIsLight = primaryLuminance > 0.18;
+
+                const bgHue = primaryHue;
+                const bgSat = 3 + Math.random() * 7;
+                const bgLight = primaryIsLight ? (3 + Math.random() * 7) : (93 + Math.random() * 5);
+                bgRgb = hslToRgb(bgHue, bgSat, bgLight);
+                bg = rgbToHex(bgRgb.r, bgRgb.g, bgRgb.b);
+            }
+            bgIsLight = getRelativeLuminance(bgRgb) > 0.5;
+        }
+
+        // Generate primary if not locked
+        if (!locked.primary) {
+            const primarySat = 60 + Math.random() * 40;
+            const primaryLight = 35 + Math.random() * 30;
+            let primaryRgb = hslToRgb(primaryHue, primarySat, primaryLight);
+            primary = rgbToHex(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+            // Ensure contrast with background
+            primary = adjustForContrast(primary, bg, 7.0, !bgIsLight);
+        }
+
+        // Generate text if not locked
+        if (!locked.text) {
+            const textHue = locked.bg ? rgbToHsl(bgRgb.r, bgRgb.g, bgRgb.b).h : primaryHue;
+            const textSat = 3 + Math.random() * 7;
+            let textLight = bgIsLight ? (5 + Math.random() * 10) : (90 + Math.random() * 8);
+            let textRgb = hslToRgb(textHue, textSat, textLight);
+            text = rgbToHex(textRgb.r, textRgb.g, textRgb.b);
+
+            // Verify text has sufficient contrast with background
+            let textContrast = getContrastRatio(hexToRgb(text), bgRgb);
+            if (textContrast < 7.0) {
+                textLight = bgIsLight ? 2 : 98;
+                textRgb = hslToRgb(textHue, textSat, textLight);
+                text = rgbToHex(textRgb.r, textRgb.g, textRgb.b);
+            }
+        }
+
+        // Generate secondary if not locked
+        if (!locked.secondary) {
+            const secondaryHue = normalizeHue(primaryHue + offsets.secondary);
+            const secondarySat = harmony === 'monochromatic'
+                ? (30 + Math.random() * 30)
+                : (50 + Math.random() * 30);
+            let secondaryLight = bgIsLight ? (35 + Math.random() * 15) : (55 + Math.random() * 20);
+            let secondaryRgb = hslToRgb(secondaryHue, secondarySat, secondaryLight);
+            secondary = rgbToHex(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b);
+            secondary = adjustForContrast(secondary, bg, 7.0, !bgIsLight);
+        }
+
+        // Generate accent if not locked
+        if (!locked.accent) {
+            const accentHue = normalizeHue(primaryHue + offsets.accent);
+            const accentSat = harmony === 'monochromatic'
+                ? (70 + Math.random() * 30)
+                : (70 + Math.random() * 30);
+            let accentLight = bgIsLight ? (35 + Math.random() * 15) : (55 + Math.random() * 20);
+            let accentRgb = hslToRgb(accentHue, accentSat, accentLight);
+            accent = rgbToHex(accentRgb.r, accentRgb.g, accentRgb.b);
+            accent = adjustForContrast(accent, bg, 7.0, !bgIsLight);
+        }
+
+        // Log contrast ratios for verification
         console.log('AAA Colors generated with harmony:', harmony);
-        console.log('Hues - Primary:', primaryHue.toFixed(0), 'Secondary:', secondaryHue.toFixed(0), 'Accent:', accentHue.toFixed(0));
         console.log('Contrast ratios:', {
             'primary-bg': getContrastRatio(hexToRgb(primary), hexToRgb(bg)).toFixed(2),
             'text-bg': getContrastRatio(hexToRgb(text), hexToRgb(bg)).toFixed(2),
